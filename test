@@ -1,0 +1,14 @@
+var firebase = new FirebaseClient("https://annguyenhoctap.firebaseio.com/");
+            List<ThongTinThe> ttThe = new List<ThongTinThe>();
+            var dinos = await firebase.Child("Lop1A")
+                        .OrderByKey()
+                        .StartAt("0601435065086205")
+                        .LimitToFirst(1)
+                        .OnceAsync<String>();
+
+            foreach(var dino in dinos)
+            {
+                MessageBox.Show(dino.Key);
+                MessageBox.Show(dino.Object);
+                //MessageBox.Show($"{ dino.Key} is { dino.Object.Infor } m high.");
+            }
