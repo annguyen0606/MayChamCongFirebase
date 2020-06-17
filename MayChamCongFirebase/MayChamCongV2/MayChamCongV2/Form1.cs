@@ -25,7 +25,6 @@ namespace MayChamCongV2
         UdpClient udpClient = null;
         IPEndPoint RemoteIP = null;
         String dataUID = "";
-        String dirPath = "C:/DanhSachNhanVien";
 
         IFirebaseConfig config = new FirebaseConfig
         {
@@ -41,17 +40,6 @@ namespace MayChamCongV2
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            dateTimePicker1.Value = DateTime.Now;
-            if (File.Exists(dirPath + "/MaNhanVien.txt"))
-            {
-
-            }
-            else
-            {
-                Directory.CreateDirectory(dirPath);
-                FileStream fs = new FileStream(dirPath + "/MaNhanVien.txt", FileMode.Create);
-                fs.Close();
-            }
             udpClient = new UdpClient(6688);
             try
             {
@@ -102,7 +90,7 @@ namespace MayChamCongV2
                 return;
             }
             FirebaseResponse response1;
-            response1 = await client.GetTaskAsync("DanhSachNhanVien/" + txbUID.Text);
+            response1 = await client.GetTaskAsync("Conek/DanhSachNhanVien/" + txbUID.Text);
             if (response1.Body == "null")
             {
                 var data = new Data
@@ -111,26 +99,10 @@ namespace MayChamCongV2
                     Name = txtNameCard.Text,
                     BirthDay = txbBirthOfDate.Text
                 };
-                SetResponse response = await client.SetTaskAsync("DanhSachNhanVien/" + txbUID.Text, data);
+                SetResponse response = await client.SetTaskAsync("Conek/DanhSachNhanVien/" + txbUID.Text, data);
                 Data result = response.ResultAs<Data>();
                 if (result.UID.Trim().Equals(txbUID.Text.Trim()))
                 {
-                    if (File.Exists(dirPath + "/MaNhanVien.txt"))
-                    {
-                        using (StreamWriter sw = File.AppendText(dirPath + "/MaNhanVien.txt"))
-                        {
-                            sw.WriteLine(txbUID.Text);
-                            sw.Close();
-                        }
-                    }
-                    else
-                    {
-                        using (StreamWriter sw = new StreamWriter(dirPath + "/MaNhanVien.txt"))
-                        {
-                            sw.WriteLine(txbUID.Text);
-                            sw.Close();
-                        }
-                    }
                     MessageBox.Show("Đăng ký thành công", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     txbUID.Text = "";
                     txtNameCard.Text = "";
@@ -159,13 +131,20 @@ namespace MayChamCongV2
 
             dataGridView1.DataSource = new DataTable();
             ArrayList danhSachNhanVien = new ArrayList();
-            danhSachNhanVien = LayDanhSachMaNhanVienDangKy();
+            var firebase1 = new FirebaseClient("https://annguyenhoctap.firebaseio.com/");
+            var duLieunhanvien = await firebase1.Child("Conek/DanhSachNhanVien/")
+                                .OrderByKey()
+                                .OnceAsync<KeyIDTagData>();
+            foreach (var anc in duLieunhanvien)
+            {
+                danhSachNhanVien.Add(anc.Key);
+            }
             foreach (String idTag in danhSachNhanVien)
             {
                 try
                 {
                     FirebaseResponse response;
-                    response = await client.GetTaskAsync("DanhSachNhanVien/" + idTag.Trim());
+                    response = await client.GetTaskAsync("Conek/DanhSachNhanVien/" + idTag.Trim());
                     Data data = response.ResultAs<Data>();
                     DataRow row = dsNhanVien.NewRow();
                     row["UID"] = data.UID;
@@ -174,7 +153,7 @@ namespace MayChamCongV2
                     row["Ngay"] = dateTimePicker1.Value.ToString("yyyy-MM-dd");
 
                     var firebase = new FirebaseClient("https://annguyenhoctap.firebaseio.com/");
-                    var duLieuChamCong = await firebase.Child("DuLieuDiemDanh/" + data.UID + "/"+ dateTimePicker1.Value.ToString("yyyy-MM-dd"))
+                    var duLieuChamCong = await firebase.Child("Conek/DuLieuDiemDanh/" + data.UID + "/"+ dateTimePicker1.Value.ToString("yyyy-MM-dd"))
                                         .OrderByKey()
                                         .OnceAsync<String>();
                     switch (duLieuChamCong.Count)
@@ -241,27 +220,6 @@ namespace MayChamCongV2
             }
             EnableButton();
         }
-        ArrayList LayDanhSachMaNhanVienDangKy()
-        {
-            ArrayList danhSachNhanVien = new ArrayList();
-            try
-            {
-                using (StreamReader streamreader = new StreamReader(dirPath + "/MaNhanVien.txt"))
-                {
-                    string[] lines = File.ReadAllLines(dirPath + "/MaNhanVien.txt");
-                    streamreader.Close();
-                    for (int i = 0; i < lines.Length; i++)
-                    {
-                        danhSachNhanVien.Add(lines[i]);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-            return danhSachNhanVien;
-        }
 
         class DataDiemDanhNhanVien
         {
@@ -294,13 +252,20 @@ namespace MayChamCongV2
 
                 dataGridView1.DataSource = new DataTable();
                 ArrayList danhSachNhanVien = new ArrayList();
-                danhSachNhanVien = LayDanhSachMaNhanVienDangKy();
+                var firebase1 = new FirebaseClient("https://annguyenhoctap.firebaseio.com/");
+                var duLieunhanvien = await firebase1.Child("Conek/DanhSachNhanVien/")
+                                    .OrderByKey()
+                                    .OnceAsync<KeyIDTagData>();
+                foreach (var anc in duLieunhanvien)
+                {
+                    danhSachNhanVien.Add(anc.Key);
+                }
                 foreach (String idTag in danhSachNhanVien)
                 {
                     try
                     {
                         FirebaseResponse response;
-                        response = await client.GetTaskAsync("DanhSachNhanVien/" + idTag.Trim());
+                        response = await client.GetTaskAsync("Conek/DanhSachNhanVien/" + idTag.Trim());
                         Data data = response.ResultAs<Data>();
                         foreach (DataRow rows in dsNhanVienDiemDanh.Rows)
                         {
@@ -310,7 +275,7 @@ namespace MayChamCongV2
                             row["Birth"] = data.BirthDay;
                             row["Ngay"] = rows["NgayThang"].ToString();
                             var firebase = new FirebaseClient("https://annguyenhoctap.firebaseio.com/");
-                            var duLieuChamCong = await firebase.Child("DuLieuDiemDanh/" + data.UID + "/" + rows["NgayThang"].ToString())
+                            var duLieuChamCong = await firebase.Child("Conek/DuLieuDiemDanh/" + data.UID + "/" + rows["NgayThang"].ToString())
                                                 .OrderByKey()
                                                 .OnceAsync<String>();
                             switch (duLieuChamCong.Count)
@@ -563,11 +528,18 @@ namespace MayChamCongV2
 
                 dataGridView1.DataSource = new DataTable();
                 ArrayList danhSachNhanVien = new ArrayList();
-                danhSachNhanVien = LayDanhSachMaNhanVienDangKy();
+                var firebase1 = new FirebaseClient("https://annguyenhoctap.firebaseio.com/");
+                var duLieunhanvien = await firebase1.Child("Conek/DanhSachNhanVien/")
+                                    .OrderByKey()
+                                    .OnceAsync<KeyIDTagData>();
+                foreach (var anc in duLieunhanvien)
+                {
+                    danhSachNhanVien.Add(anc.Key);
+                }
                 try
                 {
                     FirebaseResponse response;
-                    response = await client.GetTaskAsync("DanhSachNhanVien/" + txbUID.Text.Trim());
+                    response = await client.GetTaskAsync("Conek/DanhSachNhanVien/" + txbUID.Text.Trim());
                     Data data = response.ResultAs<Data>();
                     foreach (DataRow rows in dsNhanVienDiemDanh.Rows)
                     {
@@ -577,7 +549,7 @@ namespace MayChamCongV2
                         row["Birth"] = data.BirthDay;
                         row["Ngay"] = rows["NgayThang"].ToString();
                         var firebase = new FirebaseClient("https://annguyenhoctap.firebaseio.com/");
-                        var duLieuChamCong = await firebase.Child("DuLieuDiemDanh/" + data.UID + "/" + rows["NgayThang"].ToString())
+                        var duLieuChamCong = await firebase.Child("Conek/DuLieuDiemDanh/" + data.UID + "/" + rows["NgayThang"].ToString())
                                             .OrderByKey()
                                             .OnceAsync<String>();
                         switch (duLieuChamCong.Count)
@@ -652,14 +624,20 @@ namespace MayChamCongV2
             btnRegistration.Enabled = true;
             btnStatisticsAHuman.Enabled = true;
             btnStatisticsMonth.Enabled = true;
+            btnUpdateDuLieuNhanVien.Enabled = true;
+            btnXoaNhanVien.Enabled = true;
+            btnSearchStaff.Enabled = true;
         }
         void DisableButton()
         {
+            btnUpdateDuLieuNhanVien.Enabled = false;
+            btnXoaNhanVien.Enabled = false;
             btnExportExcel.Enabled = false;
             btnGetData.Enabled = false;
             btnRegistration.Enabled = false;
             btnStatisticsAHuman.Enabled = false;
             btnStatisticsMonth.Enabled = false;
+            btnSearchStaff.Enabled = false;
         }
 
         private async void BtnSearchStaff_Click(object sender, EventArgs e)
@@ -672,13 +650,20 @@ namespace MayChamCongV2
 
             dataGridView1.DataSource = new DataTable();
             ArrayList danhSachNhanVien = new ArrayList();
-            danhSachNhanVien = LayDanhSachMaNhanVienDangKy();
+            var firebase1 = new FirebaseClient("https://annguyenhoctap.firebaseio.com/");
+            var duLieunhanvien = await firebase1.Child("Conek/DanhSachNhanVien/")
+                                .OrderByKey()
+                                .OnceAsync<KeyIDTagData>();
+            foreach (var anc in duLieunhanvien)
+            {
+                danhSachNhanVien.Add(anc.Key);
+            }
             foreach (String idTag in danhSachNhanVien)
             {
                 try
                 {
                     FirebaseResponse response;
-                    response = await client.GetTaskAsync("DanhSachNhanVien/" + idTag.Trim());
+                    response = await client.GetTaskAsync("Conek/DanhSachNhanVien/" + idTag.Trim());
                     Data data = response.ResultAs<Data>();
                     DataRow row = dsNhanVien.NewRow();
                     row["UID"] = data.UID;
@@ -692,6 +677,7 @@ namespace MayChamCongV2
                 }
             }
             dataGridView1.DataSource = dsNhanVien;
+            lbTotalStaffs.Text = (dataGridView1.Rows.Count - 1).ToString();
             EnableButton();
         }
 
@@ -703,6 +689,93 @@ namespace MayChamCongV2
                 txtNameCard.Text = dataGridView1.Rows[e.RowIndex].Cells[1].Value.ToString();
                 txbBirthOfDate.Text = dataGridView1.Rows[e.RowIndex].Cells[2].Value.ToString();
             }
+        }
+
+        private async void BtnXoaNhanVien_Click(object sender, EventArgs e)
+        {
+            FirebaseResponse response1 = await client.DeleteTaskAsync("Conek/DanhSachNhanVien/" + txbUID.Text.Trim());
+            MessageBox.Show("Xóa thành công");
+            txbUID.Text = "";
+            txbBirthOfDate.Text = "";
+            txtNameCard.Text = "";
+            DisableButton();
+            DataTable dsNhanVien = new DataTable();
+            dsNhanVien.Columns.Add("UID");
+            dsNhanVien.Columns.Add("Name");
+            dsNhanVien.Columns.Add("Birth");
+
+            dataGridView1.DataSource = new DataTable();
+            ArrayList danhSachNhanVien = new ArrayList();
+            var firebase1 = new FirebaseClient("https://annguyenhoctap.firebaseio.com/");
+            var duLieunhanvien = await firebase1.Child("Conek/DanhSachNhanVien/")
+                                .OrderByKey()
+                                .OnceAsync<KeyIDTagData>();
+            foreach (var anc in duLieunhanvien)
+            {
+                danhSachNhanVien.Add(anc.Key);
+            }
+            foreach (String idTag in danhSachNhanVien)
+            {
+                try
+                {
+                    FirebaseResponse response;
+                    response = await client.GetTaskAsync("Conek/DanhSachNhanVien/" + idTag.Trim());
+                    Data data = response.ResultAs<Data>();
+                    DataRow row = dsNhanVien.NewRow();
+                    row["UID"] = data.UID;
+                    row["Name"] = data.Name;
+                    row["Birth"] = data.BirthDay;
+                    dsNhanVien.Rows.Add(row);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+            dataGridView1.DataSource = dsNhanVien;
+            EnableButton();
+        }
+
+        class KeyIDTagData
+        {
+            public string keyID { get; set; }
+            public string objectID { get; set; }
+        }
+
+        private async void BtnUpdateDuLieuNhanVien_Click(object sender, EventArgs e)
+        {
+            DisableButton();
+            if (String.IsNullOrEmpty(txbUID.Text))
+            {
+                MessageBox.Show("Chưa có ID", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                EnableButton();
+                return;
+            }
+            FirebaseResponse response1;
+            response1 = await client.GetTaskAsync("Conek/DanhSachNhanVien/" + txbUID.Text);
+            if (response1.Body == "null")
+            {
+                MessageBox.Show("Thẻ chưa đăng ký", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            else
+            {
+                var data = new Data
+                {
+                    UID = txbUID.Text,
+                    Name = txtNameCard.Text,
+                    BirthDay = txbBirthOfDate.Text
+                };
+                FirebaseResponse response = await client.UpdateTaskAsync("Conek/DanhSachNhanVien/" + txbUID.Text, data);
+                Data result = response.ResultAs<Data>();
+                if (result.UID.Trim().Equals(txbUID.Text.Trim()))
+                {
+                    MessageBox.Show("Sửa thành công", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    txbUID.Text = "";
+                    txtNameCard.Text = "";
+                    txbBirthOfDate.Text = "";
+                }
+            }
+            EnableButton();
         }
     }
 }
