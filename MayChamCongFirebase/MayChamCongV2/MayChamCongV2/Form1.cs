@@ -104,7 +104,8 @@ namespace MayChamCongV2
                     CMND = txbCMND.Text,
                     MST = txbMST.Text,
                     BHXH = txbBHXH.Text,
-                    NBDLV = txbNBDLV.Text
+                    NBDLV = txbNBDLV.Text,
+                    statusWork = "ON"
                 };
                 SetResponse response = await client.SetTaskAsync(pathDanhSachNhanVien + txbUID.Text, data);
                 Data result = response.ResultAs<Data>();
@@ -158,71 +159,74 @@ namespace MayChamCongV2
                     FirebaseResponse response;
                     response = await client.GetTaskAsync(pathDanhSachNhanVien + idTag.Trim());
                     Data data = response.ResultAs<Data>();
-                    DataRow row = dsNhanVien.NewRow();
-                    row["UID"] = data.UID;
-                    row["Name"] = data.Name;
-                    row["Birth"] = data.BirthDay;
-                    row["Ngay"] = dateTimePicker1.Value.ToString("yyyy-MM-dd");
-
-                    var firebase = new FirebaseClient(pathServer);
-                    var duLieuChamCong = await firebase.Child(pathDuLieuDiemDanh + data.UID + "/"+ dateTimePicker1.Value.ToString("yyyy-MM-dd"))
-                                        .OrderByKey()
-                                        .OnceAsync<String>();
-                    switch (duLieuChamCong.Count)
+                    if (data.statusWork.Equals("ON"))
                     {
-                        case 0:
-                            row["ThoiGianVao"] = " ";
-                            row["ThoiGianRa"] = " ";
-                            row["SoPhut"] = " ";
-                            row["GhiChu"] = "Không làm việc";
-                            break;
-                        case 1:
-                            foreach (var anc in duLieuChamCong)
-                            {
-                                string[] ijk = anc.Object.Split(',');
-                                row["ThoiGianVao"] = ijk[0];
+                        DataRow row = dsNhanVien.NewRow();
+                        row["UID"] = data.UID;
+                        row["Name"] = data.Name;
+                        row["Birth"] = data.BirthDay;
+                        row["Ngay"] = dateTimePicker1.Value.ToString("yyyy-MM-dd");
+
+                        var firebase = new FirebaseClient(pathServer);
+                        var duLieuChamCong = await firebase.Child(pathDuLieuDiemDanh + data.UID + "/" + dateTimePicker1.Value.ToString("yyyy-MM-dd"))
+                                            .OrderByKey()
+                                            .OnceAsync<String>();
+                        switch (duLieuChamCong.Count)
+                        {
+                            case 0:
+                                row["ThoiGianVao"] = " ";
                                 row["ThoiGianRa"] = " ";
-                                if (int.Parse(ijk[1].ToString()) > 0)
-                                {
-                                    row["SoPhut"] = ijk[1];
-                                    row["GhiChu"] = "Không Check Out, Đi Muộn";
-                                }
-                                else
-                                {
-                                    row["SoPhut"] = " ";
-                                    row["GhiChu"] = "Không Check Out";
-                                }
-                            }
-                            break;
-                        default:
-                            int i = 0;
-                            foreach (var anc in duLieuChamCong)
-                            {
-                                if (i == 0)
+                                row["SoPhut"] = " ";
+                                row["GhiChu"] = "Không làm việc";
+                                break;
+                            case 1:
+                                foreach (var anc in duLieuChamCong)
                                 {
                                     string[] ijk = anc.Object.Split(',');
                                     row["ThoiGianVao"] = ijk[0];
+                                    row["ThoiGianRa"] = " ";
                                     if (int.Parse(ijk[1].ToString()) > 0)
                                     {
                                         row["SoPhut"] = ijk[1];
-                                        row["GhiChu"] = "Đi Muộn";
+                                        row["GhiChu"] = "Không Check Out, Đi Muộn";
                                     }
                                     else
                                     {
                                         row["SoPhut"] = " ";
-                                        row["GhiChu"] = " ";
+                                        row["GhiChu"] = "Không Check Out";
                                     }
                                 }
-                                else
+                                break;
+                            default:
+                                int i = 0;
+                                foreach (var anc in duLieuChamCong)
                                 {
-                                    string[] ijk = anc.Object.Split(',');
-                                    row["ThoiGianRa"] = ijk[0];
+                                    if (i == 0)
+                                    {
+                                        string[] ijk = anc.Object.Split(',');
+                                        row["ThoiGianVao"] = ijk[0];
+                                        if (int.Parse(ijk[1].ToString()) > 0)
+                                        {
+                                            row["SoPhut"] = ijk[1];
+                                            row["GhiChu"] = "Đi Muộn";
+                                        }
+                                        else
+                                        {
+                                            row["SoPhut"] = " ";
+                                            row["GhiChu"] = " ";
+                                        }
+                                    }
+                                    else
+                                    {
+                                        string[] ijk = anc.Object.Split(',');
+                                        row["ThoiGianRa"] = ijk[0];
+                                    }
+                                    i++;
                                 }
-                                i++;
-                            }
-                            break;
+                                break;
+                        }
+                        dsNhanVien.Rows.Add(row);
                     }
-                    dsNhanVien.Rows.Add(row);
                 }
                 catch (Exception ex)
                 {
@@ -279,73 +283,76 @@ namespace MayChamCongV2
                         FirebaseResponse response;
                         response = await client.GetTaskAsync(pathDanhSachNhanVien + idTag.Trim());
                         Data data = response.ResultAs<Data>();
-                        foreach (DataRow rows in dsNhanVienDiemDanh.Rows)
+                        if (data.statusWork.Equals("ON"))
                         {
-                            DataRow row = dsNhanVien.NewRow();
-                            row["UID"] = data.UID;
-                            row["Name"] = data.Name;
-                            row["Birth"] = data.BirthDay;
-                            row["Ngay"] = rows["NgayThang"].ToString();
-                            var firebase = new FirebaseClient(pathServer);
-                            var duLieuChamCong = await firebase.Child(pathDuLieuDiemDanh + data.UID + "/" + rows["NgayThang"].ToString())
-                                                .OrderByKey()
-                                                .OnceAsync<String>();
-                            switch (duLieuChamCong.Count)
+                            foreach (DataRow rows in dsNhanVienDiemDanh.Rows)
                             {
-                                case 0:
-                                    row["ThoiGianVao"] = " ";
-                                    row["ThoiGianRa"] = " ";
-                                    row["SoPhut"] = " ";
-                                    row["GhiChu"] = "Không làm việc";
-                                    break;
-                                case 1:
-                                    foreach (var anc in duLieuChamCong)
-                                    {
-                                        string[] ijk = anc.Object.Split(',');
-                                        row["ThoiGianVao"] = ijk[0];
+                                DataRow row = dsNhanVien.NewRow();
+                                row["UID"] = data.UID;
+                                row["Name"] = data.Name;
+                                row["Birth"] = data.BirthDay;
+                                row["Ngay"] = rows["NgayThang"].ToString();
+                                var firebase = new FirebaseClient(pathServer);
+                                var duLieuChamCong = await firebase.Child(pathDuLieuDiemDanh + data.UID + "/" + rows["NgayThang"].ToString())
+                                                    .OrderByKey()
+                                                    .OnceAsync<String>();
+                                switch (duLieuChamCong.Count)
+                                {
+                                    case 0:
+                                        row["ThoiGianVao"] = " ";
                                         row["ThoiGianRa"] = " ";
-                                        if (int.Parse(ijk[1].ToString()) > 0)
-                                        {
-                                            row["SoPhut"] = ijk[1];
-                                            row["GhiChu"] = "Không Check Out, Đi Muộn";
-                                        }
-                                        else
-                                        {
-                                            row["SoPhut"] = " ";
-                                            row["GhiChu"] = "Không Check Out";
-                                        }
-                                    }
-                                    break;
-                                default:
-                                    int i = 0;
-                                    foreach (var anc in duLieuChamCong)
-                                    {
-                                        if (i == 0)
+                                        row["SoPhut"] = " ";
+                                        row["GhiChu"] = "Không làm việc";
+                                        break;
+                                    case 1:
+                                        foreach (var anc in duLieuChamCong)
                                         {
                                             string[] ijk = anc.Object.Split(',');
                                             row["ThoiGianVao"] = ijk[0];
+                                            row["ThoiGianRa"] = " ";
                                             if (int.Parse(ijk[1].ToString()) > 0)
                                             {
                                                 row["SoPhut"] = ijk[1];
-                                                row["GhiChu"] = "Đi Muộn";
+                                                row["GhiChu"] = "Không Check Out, Đi Muộn";
                                             }
                                             else
                                             {
                                                 row["SoPhut"] = " ";
-                                                row["GhiChu"] = " ";
+                                                row["GhiChu"] = "Không Check Out";
                                             }
                                         }
-                                        else
+                                        break;
+                                    default:
+                                        int i = 0;
+                                        foreach (var anc in duLieuChamCong)
                                         {
-                                            string[] ijk = anc.Object.Split(',');
-                                            row["ThoiGianRa"] = ijk[0];
+                                            if (i == 0)
+                                            {
+                                                string[] ijk = anc.Object.Split(',');
+                                                row["ThoiGianVao"] = ijk[0];
+                                                if (int.Parse(ijk[1].ToString()) > 0)
+                                                {
+                                                    row["SoPhut"] = ijk[1];
+                                                    row["GhiChu"] = "Đi Muộn";
+                                                }
+                                                else
+                                                {
+                                                    row["SoPhut"] = " ";
+                                                    row["GhiChu"] = " ";
+                                                }
+                                            }
+                                            else
+                                            {
+                                                string[] ijk = anc.Object.Split(',');
+                                                row["ThoiGianRa"] = ijk[0];
+                                            }
+                                            i++;
                                         }
-                                        i++;
-                                    }
-                                    break;
+                                        break;
+                                }
+                                dsNhanVien.Rows.Add(row);
                             }
-                            dsNhanVien.Rows.Add(row);
-                    }
+                        }
                 }
                     catch (Exception ex)
                     {
@@ -505,15 +512,18 @@ namespace MayChamCongV2
                 cExcel.Cells[1, 8] = "Ngày nhận việc";
                 for (int j = 0; j < dataGridView1.Rows.Count - 1; j++)
                 {
-                    cExcel.Cells[i, 1] = "'"+ dataGridView1.Rows[j].Cells[0].Value.ToString();
-                    cExcel.Cells[i, 2] = dataGridView1.Rows[j].Cells[1].Value.ToString();
-                    cExcel.Cells[i, 3] = dataGridView1.Rows[j].Cells[2].Value.ToString();
-                    cExcel.Cells[i, 4] = "'" + dataGridView1.Rows[j].Cells[3].Value.ToString();
-                    cExcel.Cells[i, 5] = "'" + dataGridView1.Rows[j].Cells[4].Value.ToString();
-                    cExcel.Cells[i, 6] = "'" + dataGridView1.Rows[j].Cells[5].Value.ToString();
-                    cExcel.Cells[i, 7] = "'" + dataGridView1.Rows[j].Cells[6].Value.ToString();
-                    cExcel.Cells[i, 8] = dataGridView1.Rows[j].Cells[7].Value.ToString();
-                    i++;
+                    if (dataGridView1.Rows[j].Cells[8].Value.ToString().Equals("ON"))
+                    {
+                        cExcel.Cells[i, 1] = "'" + dataGridView1.Rows[j].Cells[0].Value.ToString();
+                        cExcel.Cells[i, 2] = dataGridView1.Rows[j].Cells[1].Value.ToString();
+                        cExcel.Cells[i, 3] = dataGridView1.Rows[j].Cells[2].Value.ToString();
+                        cExcel.Cells[i, 4] = "'" + dataGridView1.Rows[j].Cells[3].Value.ToString();
+                        cExcel.Cells[i, 5] = "'" + dataGridView1.Rows[j].Cells[4].Value.ToString();
+                        cExcel.Cells[i, 6] = "'" + dataGridView1.Rows[j].Cells[5].Value.ToString();
+                        cExcel.Cells[i, 7] = "'" + dataGridView1.Rows[j].Cells[6].Value.ToString();
+                        cExcel.Cells[i, 8] = dataGridView1.Rows[j].Cells[7].Value.ToString();
+                        i++;
+                    }
                 }
             }
             else
@@ -563,86 +573,84 @@ namespace MayChamCongV2
                 dsNhanVien.Columns.Add("GhiChu");
 
                 dataGridView1.DataSource = new DataTable();
-                ArrayList danhSachNhanVien = new ArrayList();
-                var firebase1 = new FirebaseClient(pathServer);
-                var duLieunhanvien = await firebase1.Child(pathDanhSachNhanVien)
-                                    .OrderByKey()
-                                    .OnceAsync<KeyIDTagData>();
-                foreach (var anc in duLieunhanvien)
-                {
-                    danhSachNhanVien.Add(anc.Key);
-                }
                 try
                 {
                     FirebaseResponse response;
                     response = await client.GetTaskAsync(pathDanhSachNhanVien + txbUID.Text.Trim());
                     Data data = response.ResultAs<Data>();
-                    foreach (DataRow rows in dsNhanVienDiemDanh.Rows)
+                    if (data.statusWork.Equals("ON"))
                     {
-                        DataRow row = dsNhanVien.NewRow();
-                        row["UID"] = data.UID;
-                        row["Name"] = data.Name;
-                        row["Birth"] = data.BirthDay;
-                        row["Ngay"] = rows["NgayThang"].ToString();
-                        var firebase = new FirebaseClient(pathServer);
-                        var duLieuChamCong = await firebase.Child(pathDuLieuDiemDanh + data.UID + "/" + rows["NgayThang"].ToString())
-                                            .OrderByKey()
-                                            .OnceAsync<String>();
-                        switch (duLieuChamCong.Count)
+                        foreach (DataRow rows in dsNhanVienDiemDanh.Rows)
                         {
-                            case 0:
-                                row["ThoiGianVao"] = " ";
-                                row["ThoiGianRa"] = " ";
-                                row["SoPhut"] = " ";
-                                row["GhiChu"] = "Không làm việc";
-                                break;
-                            case 1:
-                                foreach (var anc in duLieuChamCong)
-                                {
-                                    string[] ijk = anc.Object.Split(',');
-                                    row["ThoiGianVao"] = ijk[0];
+                            DataRow row = dsNhanVien.NewRow();
+                            row["UID"] = data.UID;
+                            row["Name"] = data.Name;
+                            row["Birth"] = data.BirthDay;
+                            row["Ngay"] = rows["NgayThang"].ToString();
+                            var firebase = new FirebaseClient(pathServer);
+                            var duLieuChamCong = await firebase.Child(pathDuLieuDiemDanh + data.UID + "/" + rows["NgayThang"].ToString())
+                                                .OrderByKey()
+                                                .OnceAsync<String>();
+                            switch (duLieuChamCong.Count)
+                            {
+                                case 0:
+                                    row["ThoiGianVao"] = " ";
                                     row["ThoiGianRa"] = " ";
-                                    if (int.Parse(ijk[1].ToString()) > 0)
-                                    {
-                                        row["SoPhut"] = ijk[1];
-                                        row["GhiChu"] = "Không Check Out, Đi Muộn";
-                                    }
-                                    else
-                                    {
-                                        row["SoPhut"] = " ";
-                                        row["GhiChu"] = "Không Check Out";
-                                    }
-                                }
-                                break;
-                            default:
-                                int i = 0;
-                                foreach (var anc in duLieuChamCong)
-                                {
-                                    if (i == 0)
+                                    row["SoPhut"] = " ";
+                                    row["GhiChu"] = "Không làm việc";
+                                    break;
+                                case 1:
+                                    foreach (var anc in duLieuChamCong)
                                     {
                                         string[] ijk = anc.Object.Split(',');
                                         row["ThoiGianVao"] = ijk[0];
+                                        row["ThoiGianRa"] = " ";
                                         if (int.Parse(ijk[1].ToString()) > 0)
                                         {
                                             row["SoPhut"] = ijk[1];
-                                            row["GhiChu"] = "Đi Muộn";
+                                            row["GhiChu"] = "Không Check Out, Đi Muộn";
                                         }
                                         else
                                         {
                                             row["SoPhut"] = " ";
-                                            row["GhiChu"] = " ";
+                                            row["GhiChu"] = "Không Check Out";
                                         }
                                     }
-                                    else
+                                    break;
+                                default:
+                                    int i = 0;
+                                    foreach (var anc in duLieuChamCong)
                                     {
-                                        string[] ijk = anc.Object.Split(',');
-                                        row["ThoiGianRa"] = ijk[0];
+                                        if (i == 0)
+                                        {
+                                            string[] ijk = anc.Object.Split(',');
+                                            row["ThoiGianVao"] = ijk[0];
+                                            if (int.Parse(ijk[1].ToString()) > 0)
+                                            {
+                                                row["SoPhut"] = ijk[1];
+                                                row["GhiChu"] = "Đi Muộn";
+                                            }
+                                            else
+                                            {
+                                                row["SoPhut"] = " ";
+                                                row["GhiChu"] = " ";
+                                            }
+                                        }
+                                        else
+                                        {
+                                            string[] ijk = anc.Object.Split(',');
+                                            row["ThoiGianRa"] = ijk[0];
+                                        }
+                                        i++;
                                     }
-                                    i++;
-                                }
-                                break;
+                                    break;
+                            }
+                            dsNhanVien.Rows.Add(row);
                         }
-                        dsNhanVien.Rows.Add(row);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Nhân viên đã nghỉ việc không thể thống kê", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                 }
                 catch (Exception ex)
@@ -678,14 +686,35 @@ namespace MayChamCongV2
 
         private async void BtnSearchStaff_Click(object sender, EventArgs e)
         {
-            var firebase1 = new FirebaseClient(pathServer);
-            var duLieunhanvien = await firebase1.Child(pathDuLieuDiemDanh)
-                                .OrderByPriority()
-                                .OnceAsync<KeyIDTagData>();
-            foreach (var anc in duLieunhanvien)
+            DisableButton();
+            if (String.IsNullOrEmpty(txbUID.Text))
             {
-                MessageBox.Show(anc.Object.keyID);
+                MessageBox.Show("Chưa chạm thẻ", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                EnableButton();
+                return;
             }
+            var data = new Data
+            {
+                UID = txbUID.Text,
+                Name = txtNameCard.Text,
+                BirthDay = txbBirthOfDate.Text,
+                SDT = txbSDT.Text,
+                CMND = txbCMND.Text,
+                MST = txbMST.Text,
+                BHXH = txbBHXH.Text,
+                NBDLV = txbNBDLV.Text,
+                statusWork = "ON"
+            };
+            PushResponse response = client.Push(pathDuLieuDiemDanh + txbUID.Text+"/2020-06-18", "jhfjdhj");
+            if (String.IsNullOrEmpty(response.Result.Name.ToString()))
+            {
+
+            }
+            else
+            {
+                MessageBox.Show("Push success");
+            }
+            EnableButton();
 
             //DisableButton();
             //DataTable dsNhanVien = new DataTable();
@@ -697,7 +726,7 @@ namespace MayChamCongV2
             //dsNhanVien.Columns.Add("MST");
             //dsNhanVien.Columns.Add("BHXH");
             //dsNhanVien.Columns.Add("NgayBDLV");
-
+            //dsNhanVien.Columns.Add("StatusWork");
             //dataGridView1.DataSource = new DataTable();
             //ArrayList danhSachNhanVien = new ArrayList();
             //var firebase1 = new FirebaseClient(pathServer);
@@ -724,6 +753,7 @@ namespace MayChamCongV2
             //        row["MST"] = data.MST;
             //        row["BHXH"] = data.BHXH;
             //        row["NgayBDLV"] = data.NBDLV;
+            //        row["StatusWork"] = data.statusWork;
             //        dsNhanVien.Rows.Add(row);
             //    }
             //    catch (Exception ex)
@@ -760,52 +790,95 @@ namespace MayChamCongV2
 
         private async void BtnXoaNhanVien_Click(object sender, EventArgs e)
         {
-            FirebaseResponse response1 = await client.DeleteTaskAsync(pathDanhSachNhanVien + txbUID.Text.Trim());
-            MessageBox.Show("Xóa thành công");
-            txbUID.Text = "";
-            txtNameCard.Text = "";
-            txbBirthOfDate.Text = "";
-            txbSDT.Text = "";
-            txbCMND.Text = "";
-            txbMST.Text = "";
-            txbBHXH.Text = "";
-            txbNBDLV.Text = "";
             DisableButton();
-            DataTable dsNhanVien = new DataTable();
-            dsNhanVien.Columns.Add("UID");
-            dsNhanVien.Columns.Add("Name");
-            dsNhanVien.Columns.Add("Birth");
-
-            dataGridView1.DataSource = new DataTable();
-            ArrayList danhSachNhanVien = new ArrayList();
-            var firebase1 = new FirebaseClient(pathServer);
-            var duLieunhanvien = await firebase1.Child(pathDanhSachNhanVien)
-                                .OrderByKey()
-                                .OnceAsync<KeyIDTagData>();
-            foreach (var anc in duLieunhanvien)
+            if (String.IsNullOrEmpty(txbUID.Text))
             {
-                danhSachNhanVien.Add(anc.Key);
+                MessageBox.Show("Chưa có ID", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                EnableButton();
+                return;
             }
-            foreach (String idTag in danhSachNhanVien)
+            FirebaseResponse response1;
+            response1 = await client.GetTaskAsync(pathDanhSachNhanVien + txbUID.Text);
+            if (response1.Body == "null")
             {
-                try
+                MessageBox.Show("Thẻ chưa đăng ký", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            else
+            {
+                var data = new Data
                 {
-                    FirebaseResponse response;
-                    response = await client.GetTaskAsync(pathDanhSachNhanVien + idTag.Trim());
-                    Data data = response.ResultAs<Data>();
-                    DataRow row = dsNhanVien.NewRow();
-                    row["UID"] = data.UID;
-                    row["Name"] = data.Name;
-                    row["Birth"] = data.BirthDay;
-                    dsNhanVien.Rows.Add(row);
-                }
-                catch (Exception ex)
+                    UID = txbUID.Text,
+                    Name = txtNameCard.Text,
+                    BirthDay = txbBirthOfDate.Text,
+                    SDT = txbSDT.Text,
+                    CMND = txbCMND.Text,
+                    MST = txbMST.Text,
+                    BHXH = txbBHXH.Text,
+                    NBDLV = txbNBDLV.Text,
+                    statusWork = "OFF"
+                };
+                FirebaseResponse response = await client.UpdateTaskAsync(pathDanhSachNhanVien + txbUID.Text, data);
+                Data result = response.ResultAs<Data>();
+                if (result.UID.Trim().Equals(txbUID.Text.Trim()))
                 {
-                    MessageBox.Show(ex.Message);
+                    MessageBox.Show("Xóa thành công", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    txbUID.Text = "";
+                    txtNameCard.Text = "";
+                    txbBirthOfDate.Text = "";
+                    txbSDT.Text = "";
+                    txbCMND.Text = "";
+                    txbMST.Text = "";
+                    txbBHXH.Text = "";
+                    txbNBDLV.Text = "";
                 }
             }
-            dataGridView1.DataSource = dsNhanVien;
             EnableButton();
+            //FirebaseResponse response1 = await client.DeleteTaskAsync(pathDanhSachNhanVien + txbUID.Text.Trim());
+            //MessageBox.Show("Xóa thành công");
+            //txbUID.Text = "";
+            //txtNameCard.Text = "";
+            //txbBirthOfDate.Text = "";
+            //txbSDT.Text = "";
+            //txbCMND.Text = "";
+            //txbMST.Text = "";
+            //txbBHXH.Text = "";
+            //txbNBDLV.Text = "";
+            //DisableButton();
+            //DataTable dsNhanVien = new DataTable();
+            //dsNhanVien.Columns.Add("UID");
+            //dsNhanVien.Columns.Add("Name");
+            //dsNhanVien.Columns.Add("Birth");
+
+            //dataGridView1.DataSource = new DataTable();
+            //ArrayList danhSachNhanVien = new ArrayList();
+            //var firebase1 = new FirebaseClient(pathServer);
+            //var duLieunhanvien = await firebase1.Child(pathDanhSachNhanVien)
+            //                    .OrderByKey()
+            //                    .OnceAsync<KeyIDTagData>();
+            //foreach (var anc in duLieunhanvien)
+            //{
+            //    danhSachNhanVien.Add(anc.Key);
+            //}
+            //foreach (String idTag in danhSachNhanVien)
+            //{
+            //    try
+            //    {
+            //        FirebaseResponse response;
+            //        response = await client.GetTaskAsync(pathDanhSachNhanVien + idTag.Trim());
+            //        Data data = response.ResultAs<Data>();
+            //        DataRow row = dsNhanVien.NewRow();
+            //        row["UID"] = data.UID;
+            //        row["Name"] = data.Name;
+            //        row["Birth"] = data.BirthDay;
+            //        dsNhanVien.Rows.Add(row);
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        MessageBox.Show(ex.Message);
+            //    }
+            //}
+            //dataGridView1.DataSource = dsNhanVien;
+            //EnableButton();
         }
 
         class KeyIDTagData
@@ -839,7 +912,8 @@ namespace MayChamCongV2
                     CMND = txbCMND.Text,
                     MST = txbMST.Text,
                     BHXH = txbBHXH.Text,
-                    NBDLV = txbNBDLV.Text
+                    NBDLV = txbNBDLV.Text,
+                    statusWork = "ON"
                 };
                 FirebaseResponse response = await client.UpdateTaskAsync(pathDanhSachNhanVien + txbUID.Text, data);
                 Data result = response.ResultAs<Data>();

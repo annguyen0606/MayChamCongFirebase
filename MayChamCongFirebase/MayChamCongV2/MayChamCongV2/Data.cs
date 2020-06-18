@@ -10,5 +10,6 @@
         public string MST { get; set; }
         public string BHXH { get; set; }
         public string NBDLV { get; set; }
+        public string statusWork { get; set; }
     }
 }
