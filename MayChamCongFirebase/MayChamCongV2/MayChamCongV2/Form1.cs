@@ -17,6 +17,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using Newtonsoft.Json.Linq;
+using RestSharp;
 
 namespace MayChamCongV2
 {
@@ -27,11 +29,12 @@ namespace MayChamCongV2
         String dataUID = "";
         String pathDuLieuDiemDanh = "Conek/DuLieuDiemDanh/";
         String pathDanhSachNhanVien = "Conek/DanhSachNhanVien/";
-        String pathServer = "https://annguyenhoctap.firebaseio.com/";
+        
+        String pathServer = "https://cloud-nfc-proj.firebaseio.com/";
         IFirebaseConfig config = new FirebaseConfig
         {
-            AuthSecret = "",
-            BasePath = "https://annguyenhoctap.firebaseio.com/"
+            AuthSecret = "XYcRpajciWgqrcQNUWovKfSOEUTUFv5hgkyGEvnI",
+            BasePath = "https://cloud-nfc-proj.firebaseio.com/"
         };
 
         IFirebaseClient client;
@@ -144,7 +147,7 @@ namespace MayChamCongV2
 
             dataGridView1.DataSource = new DataTable();
             ArrayList danhSachNhanVien = new ArrayList();
-            var firebase1 = new FirebaseClient(pathServer);
+            var firebase1 = new FirebaseClient(pathServer, new FirebaseOptions { AuthTokenAsyncFactory = () => Task.FromResult("XYcRpajciWgqrcQNUWovKfSOEUTUFv5hgkyGEvnI") });
             var duLieunhanvien = await firebase1.Child(pathDanhSachNhanVien)
                                 .OrderByKey()
                                 .OnceAsync<KeyIDTagData>();
@@ -167,7 +170,7 @@ namespace MayChamCongV2
                         row["Birth"] = data.BirthDay;
                         row["Ngay"] = dateTimePicker1.Value.ToString("yyyy-MM-dd");
 
-                        var firebase = new FirebaseClient(pathServer);
+                        var firebase = new FirebaseClient(pathServer, new FirebaseOptions { AuthTokenAsyncFactory = () => Task.FromResult("XYcRpajciWgqrcQNUWovKfSOEUTUFv5hgkyGEvnI") });
                         var duLieuChamCong = await firebase.Child(pathDuLieuDiemDanh + data.UID + "/" + dateTimePicker1.Value.ToString("yyyy-MM-dd"))
                                             .OrderByKey()
                                             .OnceAsync<String>();
@@ -268,7 +271,7 @@ namespace MayChamCongV2
 
                 dataGridView1.DataSource = new DataTable();
                 ArrayList danhSachNhanVien = new ArrayList();
-                var firebase1 = new FirebaseClient(pathServer);
+                var firebase1 = new FirebaseClient(pathServer, new FirebaseOptions { AuthTokenAsyncFactory = () => Task.FromResult("XYcRpajciWgqrcQNUWovKfSOEUTUFv5hgkyGEvnI") });
                 var duLieunhanvien = await firebase1.Child(pathDanhSachNhanVien)
                                     .OrderByKey()
                                     .OnceAsync<KeyIDTagData>();
@@ -292,7 +295,7 @@ namespace MayChamCongV2
                                 row["Name"] = data.Name;
                                 row["Birth"] = data.BirthDay;
                                 row["Ngay"] = rows["NgayThang"].ToString();
-                                var firebase = new FirebaseClient(pathServer);
+                                var firebase = new FirebaseClient(pathServer, new FirebaseOptions { AuthTokenAsyncFactory = () => Task.FromResult("XYcRpajciWgqrcQNUWovKfSOEUTUFv5hgkyGEvnI") });
                                 var duLieuChamCong = await firebase.Child(pathDuLieuDiemDanh + data.UID + "/" + rows["NgayThang"].ToString())
                                                     .OrderByKey()
                                                     .OnceAsync<String>();
@@ -587,7 +590,7 @@ namespace MayChamCongV2
                             row["Name"] = data.Name;
                             row["Birth"] = data.BirthDay;
                             row["Ngay"] = rows["NgayThang"].ToString();
-                            var firebase = new FirebaseClient(pathServer);
+                            var firebase = new FirebaseClient(pathServer, new FirebaseOptions { AuthTokenAsyncFactory = () => Task.FromResult("XYcRpajciWgqrcQNUWovKfSOEUTUFv5hgkyGEvnI") });
                             var duLieuChamCong = await firebase.Child(pathDuLieuDiemDanh + data.UID + "/" + rows["NgayThang"].ToString())
                                                 .OrderByKey()
                                                 .OnceAsync<String>();
@@ -686,84 +689,108 @@ namespace MayChamCongV2
 
         private async void BtnSearchStaff_Click(object sender, EventArgs e)
         {
-            DisableButton();
-            if (String.IsNullOrEmpty(txbUID.Text))
-            {
-                MessageBox.Show("Chưa chạm thẻ", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                EnableButton();
-                return;
-            }
-            var data = new Data
-            {
-                UID = txbUID.Text,
-                Name = txtNameCard.Text,
-                BirthDay = txbBirthOfDate.Text,
-                SDT = txbSDT.Text,
-                CMND = txbCMND.Text,
-                MST = txbMST.Text,
-                BHXH = txbBHXH.Text,
-                NBDLV = txbNBDLV.Text,
-                statusWork = "ON"
-            };
-            PushResponse response = client.Push(pathDuLieuDiemDanh + txbUID.Text+"/2020-06-18", "jhfjdhj");
-            if (String.IsNullOrEmpty(response.Result.Name.ToString()))
-            {
-
-            }
-            else
-            {
-                MessageBox.Show("Push success");
-            }
-            EnableButton();
-
             //DisableButton();
-            //DataTable dsNhanVien = new DataTable();
-            //dsNhanVien.Columns.Add("UID");
-            //dsNhanVien.Columns.Add("Name");
-            //dsNhanVien.Columns.Add("Birth");
-            //dsNhanVien.Columns.Add("SDT");
-            //dsNhanVien.Columns.Add("CMND");
-            //dsNhanVien.Columns.Add("MST");
-            //dsNhanVien.Columns.Add("BHXH");
-            //dsNhanVien.Columns.Add("NgayBDLV");
-            //dsNhanVien.Columns.Add("StatusWork");
-            //dataGridView1.DataSource = new DataTable();
-            //ArrayList danhSachNhanVien = new ArrayList();
-            //var firebase1 = new FirebaseClient(pathServer);
-            //var duLieunhanvien = await firebase1.Child(pathDanhSachNhanVien)
-            //                    .OrderByKey()
-            //                    .OnceAsync<KeyIDTagData>();
-            //foreach (var anc in duLieunhanvien)
+            //if (String.IsNullOrEmpty(txbUID.Text))
             //{
-            //    danhSachNhanVien.Add(anc.Key);
+            //    MessageBox.Show("Chưa chạm thẻ", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            //    EnableButton();
+            //    return;
             //}
-            //foreach (String idTag in danhSachNhanVien)
+            //var data = new Data
             //{
-            //    try
-            //    {
-            //        FirebaseResponse response;
-            //        response = await client.GetTaskAsync(pathDanhSachNhanVien + idTag.Trim());
-            //        Data data = response.ResultAs<Data>();
-            //        DataRow row = dsNhanVien.NewRow();
-            //        row["UID"] = data.UID;
-            //        row["Name"] = data.Name;
-            //        row["Birth"] = data.BirthDay;
-            //        row["SDT"] = data.SDT;
-            //        row["CMND"] = data.CMND;
-            //        row["MST"] = data.MST;
-            //        row["BHXH"] = data.BHXH;
-            //        row["NgayBDLV"] = data.NBDLV;
-            //        row["StatusWork"] = data.statusWork;
-            //        dsNhanVien.Rows.Add(row);
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        MessageBox.Show(ex.Message);
-            //    }
+            //    UID = txbUID.Text,
+            //    Name = txtNameCard.Text,
+            //    BirthDay = txbBirthOfDate.Text,
+            //    SDT = txbSDT.Text,
+            //    CMND = txbCMND.Text,
+            //    MST = txbMST.Text,
+            //    BHXH = txbBHXH.Text,
+            //    NBDLV = txbNBDLV.Text,
+            //    statusWork = "ON"
+            //};
+            //PushResponse response = client.Push(pathDuLieuDiemDanh + txbUID.Text+"/2020-06-18", "jhfjdhj");
+            //if (String.IsNullOrEmpty(response.Result.Name.ToString()))
+            //{
+
             //}
-            //dataGridView1.DataSource = dsNhanVien;
-            //lbTotalStaffs.Text = (dataGridView1.Rows.Count - 1).ToString();
+            //else
+            //{
+            //    MessageBox.Show("Push success");
+            //}
             //EnableButton();
+
+
+            DisableButton();
+            DataTable dsNhanVien = new DataTable();
+            dsNhanVien.Columns.Add("UID");
+            dsNhanVien.Columns.Add("Name");
+            dsNhanVien.Columns.Add("Birth");
+            dsNhanVien.Columns.Add("SDT");
+            dsNhanVien.Columns.Add("CMND");
+            dsNhanVien.Columns.Add("MST");
+            dsNhanVien.Columns.Add("BHXH");
+            dsNhanVien.Columns.Add("NgayBDLV");
+            dsNhanVien.Columns.Add("StatusWork");
+            var client = new RestClient("https://cloud-nfc-proj.firebaseio.com/Conek/DanhSachNhanVien.json?auth=XYcRpajciWgqrcQNUWovKfSOEUTUFv5hgkyGEvnI");
+            client.Timeout = -1;
+            var request = new RestRequest(Method.GET);
+            IRestResponse response = client.Execute(request);
+            //textBox1.Text = response.Content;
+            var root = JObject.Parse(response.Content);
+            foreach (JProperty property in root.Properties())
+            {
+                //MessageBox.Show(property.Value);
+            }
+            int i = 0;
+            foreach (KeyValuePair<string, JToken> property in root)
+            {
+                int j = 0;
+                var rootJosn = JObject.Parse(property.Value.ToString());
+                dsNhanVien.Rows.Add();
+                foreach (KeyValuePair<string, JToken> property2 in rootJosn)
+                {
+                    if (property2.Key.ToString().Equals("UID"))
+                    {
+                        dsNhanVien.Rows[i]["UID"] = property2.Value.ToString();
+                    }
+                    else if (property2.Key.ToString().Equals("BHXH"))
+                    {
+                        dsNhanVien.Rows[i]["BHXH"] = property2.Value.ToString();
+                    }
+                    else if (property2.Key.ToString().Equals("BirthDay"))
+                    {
+                        dsNhanVien.Rows[i]["Birth"] = property2.Value.ToString();
+                    }
+                    else if (property2.Key.ToString().Equals("CMND"))
+                    {
+                        dsNhanVien.Rows[i]["CMND"] = property2.Value.ToString();
+                    }
+                    else if (property2.Key.ToString().Equals("MST"))
+                    {
+                        dsNhanVien.Rows[i]["MST"] = property2.Value.ToString();
+                    }
+                    else if (property2.Key.ToString().Equals("NBDLV"))
+                    {
+                        dsNhanVien.Rows[i]["NgayBDLV"] = property2.Value.ToString();
+                    }
+                    else if (property2.Key.ToString().Equals("Name"))
+                    {
+                        dsNhanVien.Rows[i]["Name"] = property2.Value.ToString();
+                    }
+                    else if (property2.Key.ToString().Equals("SDT"))
+                    {
+                        dsNhanVien.Rows[i]["SDT"] = property2.Value.ToString();
+                    }
+                    else
+                    {
+                        dsNhanVien.Rows[i]["StatusWork"] = property2.Value.ToString();
+                    }
+                }
+                i++;
+            }
+            dataGridView1.DataSource = dsNhanVien;
+            lbTotalStaffs.Text = dsNhanVien.Rows.Count.ToString();
+            EnableButton();
         }
 
         private void DataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
